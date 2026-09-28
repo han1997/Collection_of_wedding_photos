@@ -36,12 +36,9 @@ ENV NODE_ENV=production \
     DATA_ROOT=/data \
     PORT=3000
 
-# fnOS 在国内，默认的 deb.debian.org 常常慢到超时，换成清华源
+# 用官方 Debian 镜像源，代理能正常访问则优先走代理加速；代理不通则 fallback 到直连。
+# 不硬编码国内镜像，避免代理环境下 403。
 RUN set -eux; \
-    if [ -f /etc/apt/sources.list.d/debian.sources ]; then \
-      sed -i 's|deb.debian.org|mirrors.tuna.tsinghua.edu.cn|g; s|security.debian.org|mirrors.tuna.tsinghua.edu.cn|g' \
-        /etc/apt/sources.list.d/debian.sources; \
-    fi; \
     apt-get update; \
     apt-get install -y --no-install-recommends \
       ffmpeg \
