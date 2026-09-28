@@ -1,0 +1,69 @@
+<view class="page admin-login">
+
+  <view class="head">
+    <view class="icon">🎤</view>
+    <view class="title center">{{mustChange ? '修改初始密码' : '主持人登录'}}</view>
+    <view class="muted center" style="margin-top: 10rpx;">
+      {{mustChange ? '这个密码是首次部署时生成的临时密码，请换成一个你自己的' : '管理每一场婚礼的相册'}}
+    </view>
+  </view>
+
+  <!-- 登录 -->
+  <view wx:if="{{!mustChange}}" class="card">
+    <view class="field">
+      <text class="label">账号</text>
+      <input
+        class="input"
+        value="{{username}}"
+        data-field="username"
+        bindinput="onInput"
+        placeholder="admin"
+      />
+    </view>
+
+    <view class="field">
+      <text class="label">密码</text>
+      <input
+        class="input"
+        value="{{password}}"
+        data-field="password"
+        bindinput="onInput"
+        password
+        placeholder="请输入密码"
+        confirm-type="go"
+        bindconfirm="submitLogin"
+      />
+    </view>
+
+    <button
+      class="btn btn-primary"
+      style="margin-top: 36rpx;"
+      disabled="{{busy}}"
+      bindtap="submitLogin"
+    >{{busy ? '登录中…' : '登录'}}</button>
+  </view>
+
+  <!-- 强制改密 -->
+  <view wx:else class="card">
+    <view class="field">
+      <text class="label">当前密码</text>
+      <input class="input" value="{{password}}" data-field="password" bindinput="onInput" password />
+    </view>
+    <view class="field">
+      <text class="label">新密码</text>
+      <input class="input" value="{{newPassword}}" data-field="newPassword" bindinput="onInput" password placeholder="至少 8 位" />
+    </view>
+    <view class="field">
+      <text class="label">再输一次</text>
+      <input class="input" value="{{newPassword2}}" data-field="newPassword2" bindinput="onInput" password />
+    </view>
+
+    <button
+      class="btn btn-primary"
+      style="margin-top: 36rpx;"
+      disabled="{{busy}}"
+      bindtap="submitPassword"
+    >{{busy ? '提交中…' : '保存并继续'}}</button>
+  </view>
+
+</view>

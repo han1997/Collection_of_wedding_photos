@@ -1,0 +1,29 @@
+{
+  "name": "@wedding/server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "婚礼照片收集系统后端（Fastify + node:sqlite）",
+  "main": "src/index.js",
+  "engines": {
+    "node": ">=22.5.0"
+  },
+  "scripts": {
+    "start": "node --no-warnings --env-file-if-exists=../.env src/index.js",
+    "dev": "node --no-warnings --env-file-if-exists=../.env --watch src/index.js",
+    "migrate": "node --no-warnings --env-file-if-exists=../.env scripts/migrate-cli.js",
+    "seed-admin": "node --no-warnings --env-file-if-exists=../.env scripts/seed-admin.js",
+    "gc": "node --no-warnings --env-file-if-exists=../.env scripts/gc.js",
+    "test": "node --no-warnings --test \"test/**/*.test.js\""
+  },
+  "dependencies": {
+    "@fastify/rate-limit": "^11.2.0",
+    "fastify": "^5.2.1",
+    "fastify-plugin": "^5.0.1",
+    "jose": "^5.9.6",
+    "nanoid": "^5.0.9",
+    "p-limit": "^6.2.0",
+    "qrcode": "^1.5.4",
+    "sharp": "^0.33.5"
+  }
+}

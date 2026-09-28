@@ -1,0 +1,99 @@
+<view class="page">
+
+  <view wx:if="{{loading}}" class="loading">
+    <text>正在加载…</text>
+  </view>
+
+  <block wx:elif="{{errorMessage}}">
+    <view class="empty">
+      <view class="empty-icon">😕</view>
+      <view class="title">{{errorMessage}}</view>
+      <button class="btn btn-ghost" style="margin-top: 40rpx; width: 320rpx;" bindtap="loadEvent">
+        重新加载
+      </button>
+    </view>
+  </block>
+
+  <block wx:else>
+
+    <!-- 活动头部 -->
+    <view class="hero">
+      <view class="title">{{event.title}}</view>
+      <view wx:if="{{event.coupleNames}}" class="subtitle hero-sub">{{event.coupleNames}}</view>
+      <view wx:if="{{event.welcomeText}}" class="welcome">{{event.welcomeText}}</view>
+      <view class="meta">
+        <text wx:if="{{event.eventDate}}">{{event.eventDate}}</text>
+        <text wx:if="{{event.venue}}"> · {{event.venue}}</text>
+      </view>
+    </view>
+
+    <!-- 上传入口 -->
+    <view class="upload-cta">
+      <button
+        class="btn btn-primary"
+        disabled="{{!event.uploadEnabled}}"
+        bindtap="goUpload"
+      >
+        {{event.uploadEnabled ? '上传照片 / 视频' : '本场已关闭上传'}}
+      </button>
+      <view class="muted center" style="margin-top: 16rpx;">{{statText}}</view>
+    </view>
+
+    <!-- 我上传的 -->
+    <view class="section-head">
+      <text class="section-title">我上传的</text>
+      <text class="muted" wx:if="{{media.length}}">{{media.length}}{{hasMore ? '+' : ''}} 项</text>
+    </view>
+
+    <view wx:if="{{media.length === 0}}" class="empty">
+      <view class="empty-icon">📷</view>
+      <view class="subtitle">还没有上传任何内容</view>
+      <view class="muted" style="margin-top: 10rpx;">
+        你上传的照片和视频只有你自己和主持人能看到
+      </view>
+    </view>
+
+    <view wx:else class="grid">
+      <view
+        wx:for="{{media}}"
+        wx:key="id"
+        class="grid-item"
+        data-index="{{index}}"
+        bindtap="openMedia"
+        bindlongpress="deleteMedia"
+      >
+        <image
+          wx:if="{{item.thumbUrl}}"
+          class="grid-thumb"
+          src="{{item.thumbUrl}}"
+          mode="aspectFill"
+          lazy-load
+          data-index="{{index}}"
+          binderror="onImageError"
+        />
+        <view wx:else class="grid-thumb grid-thumb-empty">
+          <text>{{item.kind === 'video' ? '🎬' : '🖼'}}</text>
+        </view>
+
+        <!-- 视频角标 -->
+        <view wx:if="{{item.kind === 'video'}}" class="badge badge-video">
+          <text class="play-tri">▶</text>
+          <text wx:if="{{item.durationText}}">{{item.durationText}}</text>
+        </view>
+
+        <!-- 还在处理中 -->
+        <view wx:if="{{item.status === 'processing'}}" class="badge badge-processing">
+          处理中
+        </view>
+      </view>
+    </view>
+
+    <view wx:if="{{loadingMore}}" class="loading"><text>加载更多…</text></view>
+    <view wx:if="{{!hasMore && media.length > 0}}" class="muted center" style="padding: 40rpx;">
+      没有更多了
+    </view>
+    <view style="height: 60rpx;"></view>
+
+  </block>
+
+</view>

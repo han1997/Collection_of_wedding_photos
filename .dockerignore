@@ -1,0 +1,34 @@
+# 构建上下文里不该进镜像的东西
+#
+# 构建上下文是仓库根目录（见 server/Dockerfile 头部说明），
+# 所以这个文件必须放在根目录——Docker 只读 <上下文>/.dockerignore。
+
+.git
+.gitignore
+.github
+
+# 依赖（镜像里会重新装）
+node_modules
+**/node_modules
+
+# 本地数据与备份
+_data
+**/*.db
+**/*.db-wal
+**/*.db-shm
+
+# 环境变量：⚠️ 含 AppSecret 等密钥，绝不能进镜像层！
+# 生产用的是 compose 的 env_file，在运行时注入。
+.env
+.env.*
+
+# 小程序源码不属于后端镜像
+miniprogram
+
+# 文档与编辑器杂项
+docs
+.vscode
+.idea
+.DS_Store
+Thumbs.db
+*.log

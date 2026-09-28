@@ -1,0 +1,182 @@
+.sticky-banner {
+  margin: 20rpx 24rpx 0;
+  border-radius: 16rpx;
+}
+
+/* 选择区 */
+.picker {
+  padding: 32rpx 24rpx 8rpx;
+}
+
+.picker-inner {
+  border: 2rpx dashed #d8d3cf;
+  border-radius: 24rpx;
+  background: #ffffff;
+  padding: 56rpx 32rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.picker-icon {
+  width: 104rpx;
+  height: 104rpx;
+  border-radius: 50%;
+  background: #faf1ee;
+  color: #c8553d;
+  font-size: 56rpx;
+  line-height: 104rpx;
+  text-align: center;
+  margin-bottom: 22rpx;
+}
+
+.picker-text {
+  font-size: 32rpx;
+  font-weight: 500;
+  color: #1a1a1a;
+}
+
+.picker-hint {
+  font-size: 25rpx;
+  color: #9a9a9a;
+  margin-top: 10rpx;
+}
+
+/* 列表 */
+.list {
+  padding: 16rpx 24rpx 0;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  background: #ffffff;
+  border-radius: 18rpx;
+  padding: 24rpx;
+  margin-bottom: 14rpx;
+}
+
+.item-type {
+  width: 68rpx;
+  height: 68rpx;
+  border-radius: 14rpx;
+  background: #f5f4f3;
+  font-size: 34rpx;
+  line-height: 68rpx;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.item-info {
+  flex: 1;
+  margin: 0 20rpx;
+  min-width: 0;
+}
+
+.item-line1 {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 12rpx;
+}
+
+.item-name {
+  font-size: 28rpx;
+  color: #1a1a1a;
+}
+
+.item-state {
+  font-size: 24rpx;
+  color: #9a9a9a;
+  flex-shrink: 0;
+  margin-left: 12rpx;
+}
+
+.state-done {
+  color: #3f8f5f;
+}
+
+.state-failed {
+  color: #c8553d;
+}
+
+.state-uploading {
+  color: #c8553d;
+}
+
+.progress-track {
+  height: 8rpx;
+  background: #f0eeec;
+  border-radius: 4rpx;
+  overflow: hidden;
+}
+
+.progress-bar {
+  height: 100%;
+  background: #c8553d;
+  border-radius: 4rpx;
+  transition: width 0.25s ease;
+}
+
+.progress-bar-failed {
+  background: #d9b3aa;
+}
+
+.item-error {
+  margin-top: 10rpx;
+  font-size: 23rpx;
+  color: #c8553d;
+  line-height: 1.4;
+}
+
+.item-action {
+  flex-shrink: 0;
+}
+
+.action-link {
+  font-size: 26rpx;
+  color: #c8553d;
+}
+
+.action-remove {
+  color: #b0b0b0;
+}
+
+.action-done {
+  font-size: 34rpx;
+  color: #3f8f5f;
+}
+
+/* 底部条 */
+.footer {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #ffffff;
+  border-top: 1rpx solid #f0eeec;
+  padding: 20rpx 24rpx calc(20rpx + env(safe-area-inset-bottom));
+}
+
+.footer-stat {
+  font-size: 25rpx;
+  color: #9a9a9a;
+  margin-bottom: 14rpx;
+  text-align: center;
+}
+
+.footer-fail {
+  color: #c8553d;
+}
+
+.footer-btns {
+  display: flex;
+  gap: 16rpx;
+}
+
+.footer-btn {
+  flex: 1;
+  height: 88rpx;
+  font-size: 30rpx;
+}

@@ -1,0 +1,33 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/event/index",
+    "pages/upload/index",
+    "pages/preview/index",
+    "pages/about/index",
+    "pages/admin/login/index",
+    "pages/admin/events/index",
+    "pages/admin/event/index"
+  ],
+  "window": {
+    "backgroundTextStyle": "dark",
+    "navigationBarBackgroundColor": "#ffffff",
+    "navigationBarTitleText": "婚礼照片收集",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#f7f7f8"
+  },
+  "networkTimeout": {
+    "request": 120000,
+    "uploadFile": 60000,
+    "downloadFile": 120000
+  },
+  "permission": {
+    "scope.writePhotosAlbum": {
+      "desc": "用于把婚礼照片和视频保存到你的相册"
+    }
+  },
+  "requiredPrivateInfos": [],
+  "lazyCodeLoading": "requiredComponents",
+  "sitemapLocation": "sitemap.json",
+  "style": "v2"
+}

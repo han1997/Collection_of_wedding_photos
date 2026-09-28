@@ -1,0 +1,100 @@
+<view class="page">
+
+  <view wx:if="{{loading}}" class="loading"><text>正在加载…</text></view>
+
+  <view wx:elif="{{errorMessage}}" class="empty">
+    <view class="empty-icon">😕</view>
+    <view class="title">{{errorMessage}}</view>
+    <button class="btn btn-ghost" style="margin-top: 40rpx; width: 320rpx;" bindtap="load">重试</button>
+  </view>
+
+  <block wx:else>
+
+    <!-- 新建按钮 -->
+    <view class="topbar">
+      <button class="btn btn-primary" style="flex:1;" bindtap="toggleForm">
+        {{showForm ? '收起' : '＋ 新建婚礼活动'}}
+      </button>
+      <button class="btn btn-ghost" style="width: 140rpx; margin-left: 16rpx;" bindtap="logout">退出</button>
+    </view>
+
+    <!-- 新建表单 -->
+    <view wx:if="{{showForm}}" class="card">
+      <view class="field">
+        <text class="label">活动名称 *</text>
+        <input class="input" value="{{form.title}}" data-field="title" bindinput="onFormInput" placeholder="例如：张伟 & 李娜 婚礼" />
+      </view>
+
+      <view class="field">
+        <text class="label">新人姓名</text>
+        <input class="input" value="{{form.coupleNames}}" data-field="coupleNames" bindinput="onFormInput" placeholder="张伟 李娜" />
+      </view>
+
+      <view class="field">
+        <text class="label">婚礼日期</text>
+        <picker mode="date" value="{{form.eventDate}}" bindchange="onDateChange">
+          <view class="picker-field {{form.eventDate ? '' : 'placeholder'}}">
+            {{form.eventDate || '请选择日期'}}
+          </view>
+        </picker>
+      </view>
+
+      <view class="field">
+        <text class="label">场地</text>
+        <input class="input" value="{{form.venue}}" data-field="venue" bindinput="onFormInput" placeholder="例如：金鼎大酒店 3 楼宴会厅" />
+      </view>
+
+      <view class="field">
+        <text class="label">给宾客的欢迎语</text>
+        <textarea
+          class="textarea"
+          value="{{form.welcomeText}}"
+          data-field="welcomeText"
+          bindinput="onFormInput"
+          maxlength="200"
+          placeholder="例如：谢谢你来见证我们的婚礼，把你拍到的照片留给我们吧！"
+        />
+      </view>
+
+      <button class="btn btn-primary" disabled="{{busy}}" bindtap="createEvent">
+        {{busy ? '创建中…' : '创建并生成二维码'}}
+      </button>
+    </view>
+
+    <!-- 活动列表 -->
+    <view wx:if="{{!events.length}}" class="empty">
+      <view class="empty-icon">💍</view>
+      <view class="subtitle">还没有活动</view>
+      <view class="muted" style="margin-top: 10rpx;">点上面的按钮建第一场婚礼</view>
+    </view>
+
+    <view wx:else class="card" style="padding: 0 32rpx;">
+      <view
+        wx:for="{{events}}"
+        wx:key="id"
+        class="event-row"
+        data-id="{{item.id}}"
+        bindtap="openEvent"
+      >
+        <view class="event-main">
+          <view class="event-title">{{item.title}}</view>
+          <view class="event-meta">
+            <text>{{item.dateText}}</text>
+            <text wx:if="{{item.venue}}"> · {{item.venue}}</text>
+          </view>
+          <view class="event-stat">{{item.statText}}</view>
+        </view>
+        <view class="event-right">
+          <view wx:if="{{item.status !== 'active'}}" class="tag tag-closed">
+            {{item.status === 'closed' ? '已关闭' : '已归档'}}
+          </view>
+          <view wx:elif="{{!item.uploadEnabled}}" class="tag tag-closed">暂停上传</view>
+          <view wx:elif="{{!item.qrPath}}" class="tag tag-todo">待出码</view>
+          <view class="arrow">›</view>
+        </view>
+      </view>
+    </view>
+
+  </block>
+
+</view>

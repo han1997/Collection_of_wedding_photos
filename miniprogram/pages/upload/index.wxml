@@ -1,0 +1,93 @@
+<view class="page">
+
+  <!-- 关键提示：切到后台会断传 -->
+  <view wx:if="{{phase === 'uploading'}}" class="banner banner-warn sticky-banner">
+    <text>上传期间请保持本页面在前台。切到聊天或锁屏会中断——中断了也不要紧，回来能接着传。</text>
+  </view>
+
+  <!-- 选择区 -->
+  <view class="picker">
+    <view class="picker-inner" bindtap="choose">
+      <view class="picker-icon">＋</view>
+      <view class="picker-text">选择照片 / 视频</view>
+      <view class="picker-hint">相册里的长视频也支持，弱网可续传</view>
+    </view>
+  </view>
+
+  <!-- 待传列表 -->
+  <view wx:if="{{items.length}}" class="list">
+    <view wx:for="{{items}}" wx:key="id" class="item">
+      <view class="item-type">{{item.fileType === 'video' ? '🎬' : '🖼'}}</view>
+
+      <view class="item-info">
+        <view class="item-line1">
+          <text class="item-name">{{item.durationText || item.sizeText}}</text>
+          <text class="item-state state-{{item.state}}">{{item.stateText}}</text>
+        </view>
+
+        <view class="progress-track">
+          <view
+            class="progress-bar {{item.state === 'failed' ? 'progress-bar-failed' : ''}}"
+            style="width: {{item.state === 'done' ? 100 : item.percent}}%;"
+          ></view>
+        </view>
+
+        <view wx:if="{{item.errorText}}" class="item-error">{{item.errorText}}</view>
+      </view>
+
+      <view class="item-action">
+        <text
+          wx:if="{{item.state === 'failed'}}"
+          class="action-link"
+          data-index="{{index}}"
+          bindtap="retryItem"
+        >重试</text>
+        <text wx:elif="{{item.state === 'done'}}" class="action-done">✓</text>
+        <text
+          wx:else
+          class="action-link action-remove"
+          data-index="{{index}}"
+          bindtap="removeItem"
+        >移除</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 空状态 -->
+  <view wx:else class="empty">
+    <view class="empty-icon">📷</view>
+    <view class="subtitle">还没有选择任何内容</view>
+    <view class="muted" style="margin-top: 10rpx;">
+      你上传的内容只有你和主持人能看到
+    </view>
+  </view>
+
+  <view style="height: 240rpx;"></view>
+
+  <!-- 底部操作条 -->
+  <view wx:if="{{items.length}}" class="footer">
+    <view class="footer-stat">
+      <text wx:if="{{doneCount}}">已完成 {{doneCount}}</text>
+      <text wx:if="{{failCount}}" class="footer-fail">{{doneCount ? ' · ' : ''}}失败 {{failCount}}</text>
+      <text wx:if="{{!doneCount && !failCount}}">共 {{items.length}} 项</text>
+    </view>
+
+    <view class="footer-btns">
+      <button wx:if="{{phase === 'uploading'}}" class="btn btn-ghost footer-btn" bindtap="pause">
+        暂停
+      </button>
+      <button wx:if="{{phase === 'paused'}}" class="btn btn-primary footer-btn" bindtap="resume">
+        继续上传
+      </button>
+      <button
+        wx:if="{{phase === 'uploading' || phase === 'paused'}}"
+        class="btn btn-ghost footer-btn"
+        bindtap="choose"
+      >继续添加</button>
+      <button wx:if="{{phase === 'done'}}" class="btn btn-primary footer-btn" bindtap="goBack">
+        返回相册
+      </button>
+    </view>
+  </view>
+
+</view>

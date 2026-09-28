@@ -1,0 +1,78 @@
+.topbar {
+  display: flex;
+  align-items: center;
+  padding: 28rpx 24rpx 8rpx;
+}
+
+.topbar .btn {
+  height: 88rpx;
+  font-size: 30rpx;
+}
+
+.event-row {
+  display: flex;
+  align-items: center;
+  padding: 30rpx 0;
+  border-bottom: 1rpx solid #f2f0ee;
+}
+
+.event-row:last-child {
+  border-bottom: none;
+}
+
+.event-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.event-title {
+  font-size: 31rpx;
+  font-weight: 500;
+  color: #1a1a1a;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.event-meta {
+  font-size: 25rpx;
+  color: #9a9a9a;
+  margin-top: 8rpx;
+}
+
+.event-stat {
+  font-size: 25rpx;
+  color: #6b6b6b;
+  margin-top: 6rpx;
+}
+
+.event-right {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  flex-shrink: 0;
+  margin-left: 20rpx;
+}
+
+.tag {
+  font-size: 22rpx;
+  padding: 6rpx 14rpx;
+  border-radius: 8rpx;
+  line-height: 1;
+}
+
+.tag-closed {
+  background: #f2f0ee;
+  color: #8a8a8a;
+}
+
+.tag-todo {
+  background: #fdf3e7;
+  color: #8a5a1f;
+}
+
+.arrow {
+  font-size: 40rpx;
+  color: #c8c8c8;
+  line-height: 1;
+}

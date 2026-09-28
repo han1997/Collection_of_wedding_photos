@@ -1,0 +1,47 @@
+.landing {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.code-entry {
+  padding-top: 140rpx;
+}
+
+.logo {
+  font-size: 110rpx;
+  text-align: center;
+  line-height: 1;
+  margin-bottom: 32rpx;
+}
+
+.code-input {
+  height: 96rpx;
+  background: #f7f7f8;
+  border-radius: 16rpx;
+  padding: 0 28rpx;
+  font-size: 34rpx;
+  letter-spacing: 4rpx;
+  text-align: center;
+  font-family: 'SF Mono', Menlo, Consolas, monospace;
+}
+
+.footer-links {
+  margin-top: 60rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16rpx;
+}
+
+.link {
+  font-size: 26rpx;
+  color: #9a9a9a;
+  text-decoration: underline;
+  padding: 12rpx 8rpx;
+}
+
+.link-sep {
+  font-size: 26rpx;
+  color: #d0d0d0;
+}

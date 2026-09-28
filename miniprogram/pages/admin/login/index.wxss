@@ -1,0 +1,18 @@
+.admin-login {
+  min-height: 100vh;
+}
+
+.head {
+  padding: 120rpx 48rpx 40rpx;
+}
+
+.head .icon {
+  font-size: 100rpx;
+  line-height: 1;
+  text-align: center;
+  margin-bottom: 28rpx;
+}
+
+.card .btn {
+  width: 100%;
+}

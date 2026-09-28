@@ -1,0 +1,24 @@
+# 依赖
+node_modules/
+npm-debug.log*
+.npm/
+
+# 环境变量（含 AppSecret / 密钥，绝不入库）
+.env
+.env.*
+!.env.example
+
+# 本地开发数据（DATA_ROOT）
+_data/
+*.db
+*.db-wal
+*.db-shm
+
+# 小程序本地私有配置（含本机路径、编译设置）
+miniprogram/project.private.config.json
+
+# 系统
+.DS_Store
+Thumbs.db
+desktop.ini
+*.log

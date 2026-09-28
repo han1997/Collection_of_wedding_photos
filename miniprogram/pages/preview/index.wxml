@@ -1,0 +1,89 @@
+<view class="viewer">
+
+  <swiper
+    class="swiper"
+    current="{{current}}"
+    bindchange="onSwiperChange"
+    duration="220"
+    circular="{{false}}"
+  >
+    <swiper-item wx:for="{{list}}" wx:key="id" class="slide">
+
+      <!-- 图片 -->
+      <image
+        wx:if="{{item.kind === 'image'}}"
+        class="media"
+        src="{{item.previewUrl}}"
+        mode="aspectFit"
+        binderror="onImageError"
+        bindtap="noop"
+      />
+
+      <!-- 视频 -->
+      <video
+        wx:else
+        class="media"
+        src="{{item.videoUrl}}"
+        poster="{{item.thumbUrl}}"
+        object-fit="contain"
+        show-center-play-btn
+        enable-progress-gesture
+        show-fullscreen-btn
+        bindtap="noop"
+      ></video>
+
+      <!-- 处理中的提示 -->
+      <view wx:if="{{item.status === 'processing'}}" class="processing-tip">
+        正在生成缩略图…
+      </view>
+
+    </swiper-item>
+  </swiper>
+
+  <!-- 顶栏信息 -->
+  <view class="topbar">
+    <view class="counter">{{current + 1}} / {{list.length}}</view>
+  </view>
+
+  <!-- 底栏操作 -->
+  <view class="bottombar" wx:if="{{currentItem}}">
+    <view class="meta">
+      <text>{{currentItem.timeText}}</text>
+      <text class="dot">·</text>
+      <text>{{currentItem.sizeText}}</text>
+      <text wx:if="{{currentItem.durationText}}" class="dot">·</text>
+      <text wx:if="{{currentItem.durationText}}">{{currentItem.durationText}}</text>
+    </view>
+
+    <view class="actions">
+      <view class="action" bindtap="save">
+        <view class="action-icon">⬇</view>
+        <view class="action-label">保存到相册</view>
+      </view>
+      <view class="action" bindtap="remove">
+        <view class="action-icon">🗑</view>
+        <view class="action-label">删除</view>
+      </view>
+      <view class="action" bindtap="openReport">
+        <view class="action-icon">⚑</view>
+        <view class="action-label">举报</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 举报弹层 -->
+  <view wx:if="{{showReport}}" class="mask" bindtap="closeReport">
+    <view class="sheet" catchtap="noop">
+      <view class="sheet-title">举报原因</view>
+      <view
+        wx:for="{{reportReasons}}"
+        wx:key="*this"
+        class="sheet-item"
+        data-reason="{{item}}"
+        bindtap="submitReport"
+      >{{item}}</view>
+      <view class="sheet-cancel" bindtap="closeReport">取消</view>
+    </view>
+  </view>
+
+</view>

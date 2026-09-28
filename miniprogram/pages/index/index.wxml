@@ -1,0 +1,60 @@
+<view class="page landing">
+
+  <!-- 解析中 -->
+  <view wx:if="{{phase === 'parsing'}}" class="loading">
+    <text>正在进入婚礼相册…</text>
+  </view>
+
+  <!-- 出错 -->
+  <view wx:elif="{{phase === 'error'}}" class="empty">
+    <view class="empty-icon">😕</view>
+    <view class="title">{{errorMessage}}</view>
+    <view class="subtitle" style="margin-top: 16rpx;">
+      请确认二维码是本场婚礼的，或向主持人确认活动码。
+    </view>
+    <button class="btn btn-primary" style="margin-top: 48rpx; width: 400rpx;" bindtap="retry">
+      重试
+    </button>
+  </view>
+
+  <!-- 需要手动输入活动码 -->
+  <view wx:else class="code-entry">
+    <view class="logo">💐</view>
+    <view class="title center">婚礼照片收集</view>
+    <view class="subtitle center" style="margin-top: 12rpx;">
+      把你在婚礼现场拍的照片和视频传给新人
+    </view>
+
+    <view class="card" style="margin-top: 56rpx;">
+      <view class="subtitle" style="margin-bottom: 20rpx;">请输入主持人给你的活动码</view>
+      <input
+        class="code-input"
+        placeholder="例如 A1B2C3D4E5"
+        value="{{codeInput}}"
+        maxlength="16"
+        bindinput="onCodeInput"
+        confirm-type="go"
+        bindconfirm="submitCode"
+      />
+      <button
+        class="btn btn-primary"
+        style="margin-top: 28rpx;"
+        disabled="{{busy}}"
+        bindtap="submitCode"
+      >
+        {{busy ? '正在进入…' : '进入相册'}}
+      </button>
+    </view>
+
+    <view class="banner banner-info" style="margin: 0 24rpx;">
+      <text>如果现场有二维码，直接用微信扫一扫会更方便。</text>
+    </view>
+
+    <view class="footer-links">
+      <text class="link" bindtap="goAbout">关于本小程序</text>
+      <text class="link-sep">·</text>
+      <text class="link" bindtap="goAdmin">主持人入口</text>
+    </view>
+  </view>
+
+</view>

@@ -1,0 +1,122 @@
+# ============================================================================
+# 婚礼照片收集系统 —— fnOS（飞牛）部署用的 compose 文件
+#
+# 部署前必须改两处（都在下面标了「必改」）：
+#   1. volumes 里的宿主机路径 —— 换成你自己的 NAS 目录
+#   2. .env 里的 PUBLIC_BASE_URL / WX_APPID / WX_SECRET / 各种密钥
+#
+# 部署步骤见 docs/deploy-fnos.md。
+#
+# 常用命令：
+#   docker compose up -d --build      构建并启动
+#   docker compose logs -f            看日志
+#   docker compose down               停止
+# ============================================================================
+
+services:
+  wedding-collect:
+    build:
+      # 上下文是仓库根目录：需要用根 package.json + lockfile 做 workspaces 安装
+      context: .
+      dockerfile: server/Dockerfile
+
+    image: wedding-collect:0.1.0
+    container_name: wedding-collect
+
+    # 容器异常退出后自动拉起。婚礼当天服务挂了没人会去手动重启。
+    restart: unless-stopped
+
+    # ⚠️ 只绑回环，由 NAS 上的反向代理对外提供 HTTPS。
+    # 这样 TRUST_PROXY=true 才是安全的：直连不到容器，就伪造不了 X-Forwarded-For。
+    # 若你确实要直接暴露端口，把这里改成 "3000:3000"，并同时把 .env 里的
+    # TRUST_PROXY 设为 false —— 否则限流和日志里的 IP 完全不可信。
+    ports:
+      - "127.0.0.1:3000:3000"
+
+    env_file:
+      - .env
+
+    environment:
+      NODE_ENV: production
+      TZ: Asia/Shanghai
+      PORT: "3000"
+      DATA_ROOT: /data
+      # 处理并发保持 1：弱 NAS 的瓶颈就一个 CPU，调高只会让宾客上传变慢
+      THUMB_CONCURRENCY: "1"
+      # 默认不转码。弱 NAS 上转一个 4K 片段会钉住 CPU 半小时，
+      # 而那时别的宾客还在上传。
+      TRANSCODE_ENABLED: "false"
+      REMUX_ENABLED: "false"
+
+    volumes:
+      # ⚠️ 必改：换成你自己的 fnOS 路径。
+      #
+      # 这必须是**普通 bind mount**（不是 named volume），理由有三：
+      #   1. 你要能在 fnOS 的文件管理器 / SMB 里直接翻看和取走原图
+      #   2. tmp/ 和 events/ 必须在**同一个文件系统**上，
+      #      合并大文件靠 fs.rename 落盘（同盘才原子）；跨盘会退化成整文件拷贝
+      #   3. SQLite 的 WAL **不能**放在网络文件系统上 ——
+      #      所以这个路径务必指向 NAS 本地磁盘，不要指向 NFS/SMB 挂载点
+      #
+      # 先用 SSH 确认实际路径：df -h  /  ls /vol1
+      - /vol1/1000/docker/wedding-collect:/data
+
+    deploy:
+      resources:
+        limits:
+          # 留出头给 fnOS 自身、SMB 和其他容器（你 NAS 上还跑着 Emby 等）
+          cpus: "2.0"
+          # 空载约 120MB；峰值出现在 ffmpeg 抽帧那一刻
+          memory: 1g
+
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 25s
+
+    # 给在途的大文件合并和 ffmpeg 一点收尾时间，别硬杀
+    stop_grace_period: 30s
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ---------------------------------------------------------------------------
+  # 可选：Cloudflare Tunnel
+  #
+  # 什么时候需要它：家里宽带在 CGNAT 里、没有公网 IPv4，端口映射走不通，
+  # 而你又想用 Cloudflare 的证书。它不需要端口映射，也不需要自己管证书。
+  #
+  # 用法：
+  #   1. 取消下面整段的注释
+  #   2. 在 .env 里加一行 CF_TUNNEL_TOKEN=xxxx
+  #   3. Cloudflare Zero Trust 后台把隧道指向 http://wedding-collect:3000
+  #
+  # ⚠️ 两个已知限制：
+  #   · 免费版请求体上限 100MB —— 我们的分片是 4MB，远在下面（这也是分片上传的额外好处）
+  #   · 其 ToS 对视频类流量的 egress 有限制。若被限速，把媒体换到 DNS-only 子域名，
+  #     并把 .env 里的 MEDIA_BASE_URL 指过去
+  #
+  # 你已经有可用的域名和反代（music.aqzscn.cn 在跑），所以优先复用现有反代，
+  # 这一段留作备选。
+  # ---------------------------------------------------------------------------
+  # cloudflared:
+  #   image: cloudflare/cloudflared:latest
+  #   container_name: wedding-cloudflared
+  #   restart: unless-stopped
+  #   command: tunnel --no-autoupdate run --token ${CF_TUNNEL_TOKEN}
+  #   depends_on:
+  #     - wedding-collect
+  #   logging:
+  #     driver: json-file
+  #     options:
+  #       max-size: "10m"
+  #       max-file: "3"

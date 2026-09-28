@@ -1,0 +1,145 @@
+<view class="page">
+
+  <view wx:if="{{loading}}" class="loading"><text>正在加载…</text></view>
+
+  <view wx:elif="{{errorMessage}}" class="empty">
+    <view class="empty-icon">😕</view>
+    <view class="title">{{errorMessage}}</view>
+  </view>
+
+  <block wx:else>
+
+    <!-- 活动信息 -->
+    <view class="card">
+      <view class="title">{{event.title}}</view>
+      <view wx:if="{{event.coupleNames}}" class="subtitle" style="margin-top: 8rpx;">{{event.coupleNames}}</view>
+      <view class="muted" style="margin-top: 10rpx;">
+        <text wx:if="{{event.eventDate}}">{{event.eventDate}}</text>
+        <text wx:if="{{event.venue}}"> · {{event.venue}}</text>
+      </view>
+      <view class="status-row">
+        <text class="tag {{event.status === 'active' ? 'tag-active' : 'tag-closed'}}">{{event.statusText}}</text>
+        <text wx:if="{{!event.uploadEnabled}}" class="tag tag-closed">暂停上传</text>
+      </view>
+    </view>
+
+    <!-- ★ 二维码 -->
+    <view class="card qr-card">
+      <view class="section-title">活动二维码</view>
+
+      <view class="qr-wrap">
+        <image class="qr-img" src="{{qrUrl}}" mode="aspectFit" bindtap="previewQr" />
+        <view class="muted center qr-hint">点图片可放大，再长按保存</view>
+      </view>
+
+      <!-- 环境版本：决定二维码指向哪个版本的小程序 -->
+      <view class="env-row">
+        <text class="label" style="margin: 0;">生成版本</text>
+        <picker mode="selector" range="{{envOptions}}" range-key="label" value="{{envIndex}}" bindchange="onEnvChange">
+          <view class="env-picker">{{envOptions[envIndex].label}} ›</view>
+        </picker>
+      </view>
+
+      <view wx:if="{{qrMode === 'fallback'}}" class="banner banner-warn" style="margin-top: 20rpx;">
+        <text>当前是兼容二维码（扫出来打开网页）。小程序发布后点「重新生成」即可换成小程序码。</text>
+      </view>
+
+      <view class="qr-actions">
+        <button class="btn btn-primary qr-btn" disabled="{{busy}}" bindtap="regenerate">
+          {{busy ? '生成中…' : '重新生成'}}
+        </button>
+        <button class="btn btn-ghost qr-btn" bindtap="saveQr">保存到相册</button>
+      </view>
+
+      <!-- 活动码：二维码扫不开时的兜底 -->
+      <view class="code-row" bindtap="copyCode">
+        <text class="label" style="margin: 0;">活动码（点击复制）</text>
+        <text class="code-value">{{eventId}}</text>
+      </view>
+      <view class="muted" style="margin-top: 8rpx; font-size: 24rpx;">
+        建议把活动码一起印在二维码旁边：万一有宾客扫不开，还能手动输入进入。
+      </view>
+    </view>
+
+    <!-- 统计 -->
+    <view class="card">
+      <view class="section-title">收到多少了</view>
+      <view class="stats">
+        <view class="stat">
+          <view class="stat-num">{{stats.uploadCount || 0}}</view>
+          <view class="stat-label">素材</view>
+        </view>
+        <view class="stat">
+          <view class="stat-num">{{stats.guestCount || 0}}</view>
+          <view class="stat-label">宾客</view>
+        </view>
+        <view class="stat">
+          <view class="stat-num">{{stats.sizeText}}</view>
+          <view class="stat-label">占用</view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 谁传了多少 -->
+    <view wx:if="{{guests.length}}" class="card">
+      <view class="section-title">谁传了多少</view>
+      <view wx:for="{{guests}}" wx:key="guestId" class="guest-row">
+        <text class="guest-name">{{item.displayName || ('宾客 ' + item.guestId)}}</text>
+        <text class="guest-count">{{item.uploadCount}} 项</text>
+      </view>
+    </view>
+
+    <!-- 全部素材 -->
+    <view class="section-head">
+      <text class="section-title">全部素材</text>
+      <text class="muted" wx:if="{{media.length}}">{{media.length}}{{hasMore ? '+' : ''}} 项</text>
+    </view>
+
+    <view wx:if="{{!media.length}}" class="empty">
+      <view class="empty-icon">📭</view>
+      <view class="subtitle">还没有人上传</view>
+      <view class="muted" style="margin-top: 10rpx;">把二维码发到宾客群里试试</view>
+    </view>
+
+    <view wx:else class="grid">
+      <view
+        wx:for="{{media}}"
+        wx:key="id"
+        class="grid-item"
+        data-index="{{index}}"
+        bindtap="previewMedia"
+      >
+        <image wx:if="{{item.thumbUrl}}" class="grid-thumb" src="{{item.thumbUrl}}" mode="aspectFill" lazy-load />
+        <view wx:else class="grid-thumb grid-thumb-empty">
+          <text>{{item.kind === 'video' ? '🎬' : '🖼'}}</text>
+        </view>
+        <view wx:if="{{item.kind === 'video'}}" class="badge badge-video">▶</view>
+      </view>
+    </view>
+
+    <!-- 活动操作 -->
+    <view class="card">
+      <view class="section-title">活动操作</view>
+
+      <view class="list-row" bindtap="toggleUpload">
+        <view>
+          <view class="row-title">{{event.uploadEnabled ? '暂停上传' : '开启上传'}}</view>
+          <view class="muted">临时关掉上传通道，已传的不会丢</view>
+        </view>
+        <text class="arrow">›</text>
+      </view>
+
+      <view class="list-row" bindtap="closeEvent">
+        <view>
+          <view class="row-title">结束这场活动</view>
+          <view class="muted">婚礼结束后关闭，照片仍保留在 NAS 上</view>
+        </view>
+        <text class="arrow">›</text>
+      </view>
+    </view>
+
+    <view style="height: 60rpx;"></view>
+
+  </block>
+
+</view>

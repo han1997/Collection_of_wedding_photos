@@ -1,0 +1,66 @@
+<view class="page">
+
+  <view class="card">
+    <view class="title">婚礼照片收集助手</view>
+    <view class="subtitle" style="margin-top: 12rpx;">
+      把你在婚礼现场拍的照片和视频，直接传给新人。
+    </view>
+  </view>
+
+  <view class="card">
+    <view class="section-title">我们收集什么</view>
+
+    <view class="row">
+      <text class="row-key">微信身份</text>
+      <text class="row-val">仅仅一个由微信生成的匿名标识（openid），用于区分「谁传的」。不含昵称、头像、手机号。</text>
+    </view>
+
+    <view class="row">
+      <text class="row-key">你选中的照片和视频</text>
+      <text class="row-val">只上传你主动选择的内容，用于留存和交给新人。</text>
+    </view>
+
+    <view class="row">
+      <text class="row-key">怎么称呼你</text>
+      <text class="row-val">可选填。只用于让新人知道照片是谁拍的。</text>
+    </view>
+  </view>
+
+  <view class="card">
+    <view class="section-title">我们不会做什么</view>
+    <view class="bullet">· 不读取你的位置</view>
+    <view class="bullet">· 不读取你的通讯录</view>
+    <view class="bullet">· 不获取你的手机号</view>
+    <view class="bullet">· 不会把你的照片用于任何其他用途</view>
+    <view class="bullet">· 不向第三方提供你的照片</view>
+  </view>
+
+  <view class="card">
+    <view class="section-title">谁能看到你上传的内容</view>
+    <view class="body-text">
+      只有你自己，以及这场婚礼的主办者（主持人）。其他宾客看不到你上传的内容。
+    </view>
+    <view class="body-text" style="margin-top: 16rpx;">
+      你可以随时在相册里删除自己上传的任何内容，删除后我们会从服务器移除。
+    </view>
+  </view>
+
+  <view class="card">
+    <view class="section-title">联系方式</view>
+    <view class="body-text" bindtap="copyContact">
+      有问题请联系：contact@example.com（点击复制）
+    </view>
+  </view>
+
+  <view class="card" bindtap="goAdmin">
+    <view class="list-row" style="padding: 0;">
+      <view class="body-text">主持人与新人入口</view>
+      <text style="font-size: 40rpx; color: #c8c8c8; line-height: 1;">›</text>
+    </view>
+  </view>
+
+  <view class="muted center" style="padding: 20rpx 0 60rpx;">
+    版本 {{version}}
+  </view>
+
+</view>

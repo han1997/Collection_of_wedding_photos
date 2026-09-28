@@ -1,0 +1,20 @@
+{
+  "name": "collection-of-wedding-photos",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "婚礼照片收集系统：微信小程序 + 自建 NAS 后端",
+  "workspaces": [
+    "server"
+  ],
+  "engines": {
+    "node": ">=22.5.0"
+  },
+  "scripts": {
+    "dev": "npm --workspace server run dev",
+    "start": "npm --workspace server run start",
+    "test": "npm --workspace server run test",
+    "migrate": "npm --workspace server run migrate",
+    "seed-admin": "npm --workspace server run seed-admin"
+  }
+}
