@@ -24,7 +24,8 @@ COPY server/package.json server/
 
 # sharp 的平台二进制是 npm 上的 optionalDependencies，会随依赖一起装下来，
 # 不需要联网去 GitHub 下载，也不需要在镜像里编译原生模块。
-RUN npm ci --omit=dev --no-audit --no-fund
+# workspaces 模式下 npm ci 会同时装 root 和 server/ 两个包的 node_modules
+RUN npm ci --omit=dev --no-audit --no-fund --workspaces
 
 # ---------------------------------------------------------------------------
 # 运行镜像
