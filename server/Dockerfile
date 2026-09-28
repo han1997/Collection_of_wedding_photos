@@ -49,8 +49,10 @@ RUN set -eux; \
 
 WORKDIR /app
 
+# npm workspaces 会把 server/ 的依赖全部提升到根 node_modules
+# （本地布局可验证：server/node_modules 不存在）。Node 解析 import 时
+# 会逐级向上找 node_modules，/app/server/src 下的代码最终命中 /app/node_modules。
 COPY --from=deps /app/node_modules ./node_modules
-COPY --from=deps /app/server/node_modules ./server/node_modules
 COPY package.json ./
 COPY --chown=node:node server/ ./server/
 
