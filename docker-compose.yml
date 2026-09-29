@@ -26,12 +26,12 @@ services:
     # 容器异常退出后自动拉起。婚礼当天服务挂了没人会去手动重启。
     restart: unless-stopped
 
-    # ⚠️ 只绑回环，由 NAS 上的反向代理对外提供 HTTPS。
-    # 这样 TRUST_PROXY=true 才是安全的：直连不到容器，就伪造不了 X-Forwarded-For。
-    # 若你确实要直接暴露端口，把这里改成 "3000:3000"，并同时把 .env 里的
-    # TRUST_PROXY 设为 false —— 否则限流和日志里的 IP 完全不可信。
+    # 端口绑定：
+    #   - 回环绑定（127.0.0.1）→ 必须经反代才能从外面访问，TRUST_PROXY=true 才安全。
+    #   - 对全网卡绑定（0.0.0.0:1240）→ 容器可被局域网直连，TRUST_PROXY 必须设 false。
+    # 飞牛 fnOS 的反代访问不到 127.0.0.1 绑定，所以要绑全网卡 + 改端口。
     ports:
-      - "127.0.0.1:3000:3000"
+      - "0.0.0.0:1240:3000"
 
     env_file:
       - .env
@@ -59,7 +59,7 @@ services:
       #      所以这个路径务必指向 NAS 本地磁盘，不要指向 NFS/SMB 挂载点
       #
       # 先用 SSH 确认实际路径：df -h  /  ls /vol1
-      - /vol1/1000/docker/wedding-collect:/data
+      - /vol1/1000/photos/wedding-collect:/data
 
     deploy:
       resources:
