@@ -15,10 +15,10 @@ const CONFIG = {
   DEV_BASE_URL: 'http://192.168.227.2:3000',
 
   // 正式环境（备案域名）
-  PROD_BASE_URL: 'https://photos.example.com',
+  PROD_BASE_URL: 'https://piccol.han1997.fun',
 
   // 是否用正式环境。true = 走 PROD_BASE_URL。
-  useProduction: false,
+  useProduction: true,
 
   /**
    * 分片大小（字节）。
