@@ -21,18 +21,8 @@ process.env.JWT_SECRET = 'test-jwt-secret-0123456789abcdef0123456789';
 process.env.FILE_TOKEN_SECRET = 'test-file-secret-0123456789abcdef0123456789';
 process.env.PUBLIC_BASE_URL = 'http://127.0.0.1:3000';
 
-// 微信凭据：测试里不会真的调微信，而是把 globalThis.fetch 换成假的
-// （见 integration.test.js）。但 config.wechat.configured 必须为真，
-// 否则 code2Session 会提前抛 503，测不到后面的逻辑。
-process.env.WX_APPID = 'wxtestappid';
-process.env.WX_SECRET = 'test-secret';
-
 process.env.ADMIN_USERNAME = 'admin';
 process.env.ADMIN_PASSWORD = 'test-admin-password';
-
-// 关掉内容安全检测：它要真的去调微信接口，而测试里的假 fetch 会拒绝非登录的地址。
-// 关掉之后走的是 'skipped' 分支，仍然是生产代码里一条正常路径。
-process.env.CONTENT_CHECK_ENABLED = 'false';
 
 export const TEST_DATA_ROOT = dir;
 

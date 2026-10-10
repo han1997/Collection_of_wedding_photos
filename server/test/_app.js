@@ -1,10 +1,3 @@
-/**
- * 集成测试用的公共装置：起应用、伪造微信、拿令牌、造测试文件。
- *
- * 之所以伪造 `globalThis.fetch` 而不是给 wechatAuth 打桩：
- * 这样连「微信出错也返回 HTTP 200，必须看 errcode」这条真实行为
- * 也一起被测到，而不用为了可测性去改动生产代码的形状。
- */
 import './_setup.js';
 
 import config from '../src/config.js';
@@ -39,71 +32,10 @@ export async function stopApp() {
   const app = await appPromise;
   await app.close();
   appPromise = null;
+  const { drain } = await import('../src/jobs/queue.js');
+  await drain();
   closeDb();
 }
-
-// ---------------------------------------------------------------------------
-// 伪造微信
-// ---------------------------------------------------------------------------
-
-let realFetch = null;
-
-/**
- * 把 globalThis.fetch 换成一个假的微信。
- * code 就是 openid 的后缀：用 `wx-login('alice')` 之类的写法即可控制身份。
- * @param {{errcode?: number, errmsg?: string, mode?: 'ok'|'wechat-error'|'network'}} [opts]
- */
-export function installFakeWechat(opts = {}) {
-  if (!realFetch) realFetch = globalThis.fetch;
-
-  globalThis.fetch = async (url) => {
-    const u = String(url);
-
-    if (!u.includes('jscode2session')) {
-      throw new Error(`测试里不该请求这个地址：${u}`);
-    }
-
-    if (opts.mode === 'network') {
-      throw new TypeError('fetch failed');
-    }
-
-    const code = new URL(u).searchParams.get('js_code') ?? '';
-
-    if (opts.mode === 'wechat-error') {
-      // 微信的真实行为：出错时 HTTP 仍是 200，错误在 body 的 errcode 里
-      return jsonResponse({ errcode: opts.errcode ?? 40029, errmsg: opts.errmsg ?? 'invalid code' });
-    }
-
-    return jsonResponse({
-      openid: `openid-${code}`,
-      session_key: 'this-must-never-be-stored',
-    });
-  };
-}
-
-export function restoreFetch() {
-  if (realFetch) {
-    globalThis.fetch = realFetch;
-    realFetch = null;
-  }
-}
-
-function jsonResponse(body) {
-  return {
-    ok: true,
-    status: 200,
-    async json() {
-      return body;
-    },
-    async text() {
-      return JSON.stringify(body);
-    },
-  };
-}
-
-// ---------------------------------------------------------------------------
-// 登录
-// ---------------------------------------------------------------------------
 
 export async function adminLogin(app, { username = 'admin', password = 'test-admin-password' } = {}) {
   const res = await app.inject({
@@ -131,7 +63,7 @@ export async function bootstrapAdmin(app, {
   // 还没改密时，管理接口必须被拦住
   const blocked = await app.inject({
     method: 'GET',
-    url: '/api/admin/events',
+    url: '/api/admin/wedding',
     headers: { authorization: `Bearer ${initialToken}` },
   });
 
@@ -155,22 +87,12 @@ export async function bootstrapAdmin(app, {
   };
 }
 
-/**
- * 宾客登录。传入的 `code` 决定身份（openid 就是 `openid-<code>`）。
- * @returns {Promise<{token: string, guestId: number, data: any}>}
- */
-export async function guestLogin(app, code, eventId) {
-  const res = await app.inject({
-    method: 'POST',
-    url: '/api/auth/login',
-    payload: { code, ...(eventId ? { eventId } : {}) },
-  });
-
-  if (res.statusCode !== 200) {
-    throw new Error(`宾客登录失败 ${res.statusCode}: ${res.body}`);
-  }
+export async function guestLogin(app, name) {
+  const res = await app.inject({ method: 'POST', url: '/api/auth/session', payload: { displayName: name } });
+  if (res.statusCode !== 200) throw new Error(res.body);
   const data = res.json().data;
-  return { token: data.token, guestId: data.guest?.id, data };
+  const me = await app.inject({ url: '/api/auth/me', headers: { authorization: `Bearer ${data.token}` } });
+  return { token: data.token, guestId: me.json().data.me.guestId, data };
 }
 
 // ---------------------------------------------------------------------------
@@ -271,8 +193,8 @@ export async function uploadFile(app, token, eventId, {
 /** 建一个活动，返回活动对象 */
 export async function createEvent(app, token, overrides = {}) {
   const res = await app.inject({
-    method: 'POST',
-    url: '/api/admin/events',
+    method: 'PATCH',
+    url: '/api/admin/wedding',
     headers: { authorization: `Bearer ${token}` },
     payload: {
       title: '张伟 & 李娜 婚礼',

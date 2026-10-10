@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="referrer" content="no-referrer" />
+    <link rel="icon" href="data:," />
+    <title>主办者管理</title>
+    <link rel="stylesheet" href="/assets/styles.css" />
+    <script type="module" src="/assets/admin.js"></script>
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="/">此刻，留念</a
+      ><a class="quiet-link" href="/">返回上传页</a>
+    </header>
+    <main class="admin-main">
+      <div id="message" class="notice" role="status" hidden></div>
+      <section id="login-panel" class="login-panel">
+        <h1>主办者入口</h1>
+        <p class="muted">管理这场婚礼的照片与视频。</p>
+        <form id="login" class="stack">
+          <div>
+            <label for="username">账号</label
+            ><input id="username" autocomplete="username" required />
+          </div>
+          <div>
+            <label for="password">密码</label
+            ><input
+              id="password"
+              type="password"
+              autocomplete="current-password"
+              required
+            />
+          </div>
+          <button class="primary">登录</button>
+        </form>
+      </section>
+      <section id="password-panel" class="login-panel" hidden>
+        <h2>修改密码</h2>
+        <p class="muted">初次登录需更换临时密码。</p>
+        <form id="change-password" class="stack">
+          <div>
+            <label for="current-password">当前密码</label
+            ><input
+              id="current-password"
+              type="password"
+              autocomplete="current-password"
+              required
+            />
+          </div>
+          <div>
+            <label for="new-password">新密码</label
+            ><input
+              id="new-password"
+              type="password"
+              autocomplete="new-password"
+              required
+              minlength="8"
+            />
+          </div>
+          <button class="primary">保存新密码</button>
+        </form>
+      </section>
+      <div id="admin-content" hidden>
+        <div class="admin-top">
+          <h1>这一场的美好</h1>
+          <div>
+            <button id="change-password-button" class="secondary">
+              修改密码
+            </button>
+            <button id="logout" class="secondary">退出</button>
+          </div>
+        </div>
+        <div class="admin-grid">
+          <section class="panel">
+            <h2>婚礼信息</h2>
+            <form id="settings" class="form-grid">
+              <div class="full">
+                <label for="title">婚礼标题</label
+                ><input id="title" maxlength="60" required />
+              </div>
+              <div>
+                <label for="couple">新人称呼</label
+                ><input id="couple" maxlength="60" />
+              </div>
+              <div>
+                <label for="date">日期</label><input id="date" type="date" />
+              </div>
+              <div class="full">
+                <label for="venue">地点</label
+                ><input id="venue" maxlength="80" />
+              </div>
+              <div class="full">
+                <label for="welcome">欢迎语</label
+                ><textarea id="welcome" rows="3" maxlength="200"></textarea>
+              </div>
+              <label class="checkbox full"
+                ><input
+                  id="upload-enabled"
+                  type="checkbox"
+                />允许宾客上传</label
+              ><button class="primary full">保存设置</button>
+            </form>
+          </section>
+          <section class="panel">
+            <h2>邀请大家留下照片</h2>
+            <p class="muted">
+              把二维码放在现场，或将链接发给宾客。无需微信账号登录。
+            </p>
+            <img id="qr" class="qr-image" alt="婚礼照片收集入口二维码" /><a
+              id="qr-download"
+              class="primary"
+              download="婚礼上传二维码.png"
+              >下载二维码</a
+            >
+            <p class="helper"><a id="site-url" href="/">打开上传页</a></p>
+            <p class="helper">
+              同一浏览器会记住宾客会话；不同设备不会自动共享记录。
+            </p>
+          </section>
+        </div>
+        <section class="panel queue-section">
+          <h2>宾客与归档目录</h2>
+          <p class="helper">
+            每位宾客对应固定子文件夹。相同称呼不会合并，改称呼不会移动文件。
+          </p>
+          <div id="guests" class="guests-list"></div>
+        </section>
+        <section class="album">
+          <div class="section-heading">
+            <h2>收到的作品</h2>
+            <button id="refresh" class="secondary">刷新</button>
+          </div>
+          <div class="filters">
+            <div>
+              <label for="guest-filter">宾客</label
+              ><select id="guest-filter">
+                <option value="">全部宾客</option>
+              </select>
+            </div>
+            <div>
+              <label for="kind-filter">文件类型</label
+              ><select id="kind-filter">
+                <option value="">全部类型</option>
+                <option value="image">照片</option>
+                <option value="video">视频</option>
+              </select>
+            </div>
+          </div>
+          <div id="gallery" class="gallery"></div>
+          <button id="more" class="secondary load-more" hidden>加载更多</button>
+        </section>
+      </div>
+    </main>
+    <dialog id="preview">
+      <div class="dialog-top">
+        <h2>查看作品</h2>
+        <button data-close class="secondary">关闭</button>
+      </div>
+      <div class="preview-content"></div>
+      <p class="preview-note muted"></p>
+      <div class="dialog-actions">
+        <a class="primary download" download>下载原文件</a
+        ><button class="danger delete-media">删除</button>
+      </div>
+    </dialog>
+    <footer>每一份原作，都被认真保存。<a href="/privacy">隐私说明</a></footer>
+  </body>
+</html>

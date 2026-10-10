@@ -1,3 +1,4 @@
+import { currentEvent } from '../repositories/site.repo.js';
 /**
  * 分片上传接口。
  *
@@ -43,8 +44,8 @@ export default async function uploadRoutes(app) {
     },
     async (request) => {
       const body = request.body ?? {};
-      const eventId = typeof body.eventId === 'string' ? body.eventId : '';
-      const event = loadEvent(eventId);
+      const event = currentEvent();
+      if (body.eventId && body.eventId !== event.id) throw notFound('活动不存在');
 
       const { session } = await initUpload({
         event,
@@ -70,7 +71,7 @@ export default async function uploadRoutes(app) {
   // 查状态（续传的唯一依据）
   // -------------------------------------------------------------------------
   app.get('/api/uploads/:sessionId', { preHandler: app.requireGuest }, async (request) => {
-    const session = getOwnedSession(request.params.sessionId, request.guest.id);
+    const session = getOwnedSession(request.params.sessionId, request.guest.id, request.guest.eventId);
     const parts = uploadSessionsRepo.listParts(session.id);
 
     return {
@@ -93,8 +94,8 @@ export default async function uploadRoutes(app) {
   // -------------------------------------------------------------------------
   // 收分片（裸流，按 partNo 幂等）
   // -------------------------------------------------------------------------
-  app.put('/api/uploads/:sessionId/parts/:partNo', { preHandler: app.requireGuest }, async (request) => {
-    const session = getOwnedSession(request.params.sessionId, request.guest.id);
+  app.put('/api/uploads/:sessionId/parts/:partNo', { preHandler: app.requireGuest, config: { rateLimit: false } }, async (request) => {
+    const session = getOwnedSession(request.params.sessionId, request.guest.id, request.guest.eventId);
     const partNo = Number(request.params.partNo);
 
     if (!Number.isInteger(partNo)) throw badRequest('分片号必须是整数');
@@ -120,7 +121,7 @@ export default async function uploadRoutes(app) {
   // 合并
   // -------------------------------------------------------------------------
   app.post('/api/uploads/:sessionId/complete', { preHandler: app.requireGuest }, async (request) => {
-    const session = getOwnedSession(request.params.sessionId, request.guest.id);
+    const session = getOwnedSession(request.params.sessionId, request.guest.id, request.guest.eventId);
     const event = loadEvent(session.eventId);
 
     const { mediaId, alreadyCompleted } = await completeUpload({
@@ -145,7 +146,7 @@ export default async function uploadRoutes(app) {
   // 放弃
   // -------------------------------------------------------------------------
   app.delete('/api/uploads/:sessionId', { preHandler: app.requireGuest }, async (request) => {
-    const session = getOwnedSession(request.params.sessionId, request.guest.id);
+    const session = getOwnedSession(request.params.sessionId, request.guest.id, request.guest.eventId);
     await abortUpload(session);
     return { ok: true, data: { aborted: true } };
   });
@@ -154,8 +155,7 @@ export default async function uploadRoutes(app) {
   // 未完成的上传（客户端用来提示「继续上次上传」）
   // -------------------------------------------------------------------------
   app.get('/api/uploads', { preHandler: app.requireGuest }, async (request) => {
-    const eventId = String(request.query?.eventId ?? '');
-    if (!eventId) throw badRequest('缺少 eventId');
+    const eventId = request.guest.eventId;
 
     const open = uploadSessionsRepo.listOpenByGuest(eventId, request.guest.id);
 
@@ -167,6 +167,7 @@ export default async function uploadRoutes(app) {
           fileName: s.declaredName,
           declaredBytes: s.declaredBytes,
           kind: s.kind,
+          sha256: s.declaredSha256,
           expiresAt: s.expiresAt,
           receivedCount: uploadSessionsRepo.countParts(s.id),
           totalParts: s.totalParts,

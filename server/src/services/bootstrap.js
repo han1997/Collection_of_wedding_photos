@@ -1,3 +1,4 @@
+import { run } from '../db/index.js';
 /**
  * 启动时的自举：建初始管理员、恢复中断的处理任务。
  *
@@ -61,6 +62,8 @@ export function seedInitialAdmin({ log = console.log } = {}) {
  * @param {{log?: (...a: any[]) => void}} [opts]
  */
 export function recoverJobs({ log = console.log } = {}) {
+  // 上次进程中断的合并可从原分片重新开始，不把半成品当成完成文件。
+  run("UPDATE upload_sessions SET status = 'open' WHERE status = 'assembling'");
   const pending = mediaRepo.listPendingProcessing();
   if (pending.length === 0) return { recovered: 0 };
 

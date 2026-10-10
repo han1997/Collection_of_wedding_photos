@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="referrer" content="no-referrer" />
+    <link rel="icon" href="data:," />
+    <title>婚礼照片收集</title>
+    <link rel="stylesheet" href="/assets/styles.css" />
+    <script type="module" src="/assets/guest.js"></script>
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="/"
+        >此刻，留念<span class="brand-note">婚礼照片收集</span></a
+      ><a class="quiet-link" href="/admin">主办者入口</a>
+    </header>
+    <main class="guest-layout">
+      <aside class="welcome">
+        <div class="wedding-mark" aria-hidden="true">喜</div>
+        <p id="date" class="meta">相聚的日子，值得珍藏</p>
+        <h1 id="title">我们的婚礼</h1>
+        <p id="couple" class="couple"></p>
+        <p id="venue" class="muted"></p>
+        <p id="welcome" class="welcome-copy">谢谢你，留下今天的美好瞬间。</p>
+        <div class="privacy-note">
+          <strong>属于你的视角</strong>
+          <p>
+            你上传的照片和视频，只有你和主办者能看到。原文件直接保存到主办者的存储设备。
+          </p>
+        </div>
+        <a class="quiet-link" href="/privacy">隐私说明</a>
+      </aside>
+      <div class="workspace">
+        <div id="message" class="notice" role="status" hidden></div>
+        <section class="upload-panel" aria-labelledby="upload-title">
+          <div class="section-heading">
+            <h2 id="upload-title">留下你拍到的美好</h2>
+            <span class="muted">照片与视频 · 原文件保存</span>
+          </div>
+          <form id="identity" class="name-form">
+            <div>
+              <label for="name"
+                >怎么称呼你 <span class="muted">（选填）</span></label
+              ><input
+                id="name"
+                maxlength="24"
+                autocomplete="nickname"
+                placeholder="方便主办者认出你的作品"
+              />
+            </div>
+            <button class="secondary" type="submit">保存称呼</button>
+          </form>
+          <div id="dropzone" class="dropzone">
+            <p class="drop-title">把今天的笑容，留在这里</p>
+            <p class="muted">选择多张照片或视频，电脑也可拖放文件</p>
+            <label class="primary file-label" for="files">选择照片 / 视频</label
+            ><input
+              id="files"
+              class="file-input"
+              type="file"
+              accept="image/*,video/*,.heic,.heif,.mov,.mkv"
+              multiple
+              disabled
+            />
+          </div>
+          <p id="session-note" class="helper">正在连接，请稍候…</p>
+          <div id="recovery" hidden>
+            <p>
+              旧会话已失效。创建新会话后不会看到旧会话的记录，原文件仍由主办者保管。
+            </p>
+            <button id="new-session" class="secondary">创建新会话</button>
+          </div>
+          <button id="reconnect" class="secondary" hidden>重新连接</button>
+        </section>
+        <section
+          id="queue-section"
+          class="queue-section"
+          hidden
+          aria-labelledby="queue-title"
+        >
+          <div class="section-heading">
+            <h2 id="queue-title">上传队列</h2>
+            <span class="muted">上传时请保持页面打开</span>
+          </div>
+          <div id="queue" aria-live="polite"></div>
+        </section>
+        <section class="album" aria-labelledby="album-title">
+          <div class="section-heading">
+            <div>
+              <h2 id="album-title">我的上传</h2>
+              <p class="muted">从你的视角，再看一遍这一天。</p>
+            </div>
+            <button id="refresh" class="secondary">刷新</button>
+          </div>
+          <div id="gallery" class="gallery" aria-live="polite">
+            <p class="empty">正在载入你的相册…</p>
+          </div>
+          <button id="more" class="secondary load-more" hidden>加载更多</button>
+        </section>
+      </div>
+    </main>
+    <footer>美好的瞬间，原样珍藏。<a href="/privacy">隐私说明</a></footer>
+    <dialog id="preview">
+      <div class="dialog-top">
+        <h2>查看原作</h2>
+        <button data-close class="secondary">关闭</button>
+      </div>
+      <div class="preview-content"></div>
+      <p class="preview-note muted"></p>
+      <div class="dialog-actions">
+        <a class="primary download" download>下载原文件</a
+        ><button class="danger delete-media">删除</button>
+      </div>
+    </dialog>
+    <noscript><p class="notice">请启用 JavaScript 后上传照片。</p></noscript>
+  </body>
+</html>

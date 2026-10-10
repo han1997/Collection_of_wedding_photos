@@ -1,3 +1,4 @@
+import { initializeSite } from './repositories/site.repo.js';
 /**
  * 启动入口。
  *
@@ -29,6 +30,7 @@ async function main() {
 
   openDb({ file: config.paths.dbFile, verbose: !config.isProduction });
   migrate();
+  initializeSite();
 
   seedInitialAdmin();
   recoverJobs();
@@ -60,13 +62,11 @@ async function main() {
   process.on('SIGINT', () => void close('SIGINT'));
 
   // 绑 0.0.0.0，这样容器里反代才连得上；
-  // 真正的访问控制由 compose 的 `127.0.0.1:3000:3000` 端口映射负责。
+  // 访问范围由 Compose 的绑定地址与反向代理配置决定。
   await app.listen({ port: config.port, host: '0.0.0.0' });
 
   app.log.info(`对外地址 ${config.publicBaseUrl}`);
-  if (!config.wechat.configured) {
-    app.log.warn('未配置 WX_APPID / WX_SECRET：小程序码将退化为本地生成的二维码');
-  }
+
 }
 
 main().catch((err) => {

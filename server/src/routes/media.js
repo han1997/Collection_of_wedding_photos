@@ -7,12 +7,15 @@
  */
 import { badRequest, notFound } from '../lib/errors.js';
 import { fileUrl, signFileToken, VARIANTS } from '../lib/signedUrl.js';
-import { softDelete as softDeleteMedia } from '../services/mediaService.js';
-import { REASON_OPTIONS, isValidReason } from '../repositories/reports.repo.js';
+import { toClient, softDelete as softDeleteMedia } from '../services/mediaService.js';
 import * as mediaRepo from '../repositories/media.repo.js';
-import * as reportsRepo from '../repositories/reports.repo.js';
 
 export default async function mediaRoutes(app) {
+  app.get('/api/media/:id', { preHandler: app.requireGuest }, async (request) => {
+    const media = mediaRepo.findOwned({ id: request.params.id, eventId: request.guest.eventId, guestId: request.guest.id });
+    if (!media) throw notFound('素材不存在');
+    return { ok: true, data: { media: toClient(media, request.guest.id) } };
+  });
   /**
    * 换个新鲜的签名 URL。
    *
@@ -28,7 +31,7 @@ export default async function mediaRoutes(app) {
       throw badRequest(`variant 只能是 ${Object.keys(VARIANTS).join(' / ')}`);
     }
 
-    const media = mediaRepo.findOwnedAnyEvent({ id, guestId: request.guest.id });
+    const media = mediaRepo.findOwned({ id, eventId: request.guest.eventId, guestId: request.guest.id });
     if (!media) throw notFound('素材不存在');
 
     const rel = media.paths?.[variant];
@@ -47,42 +50,11 @@ export default async function mediaRoutes(app) {
   /** 删除自己上传的 */
   app.delete('/api/media/:id', { preHandler: app.requireGuest }, async (request) => {
     const { id } = request.params;
-    const media = mediaRepo.findOwnedAnyEvent({ id, guestId: request.guest.id });
+    const media = mediaRepo.findOwned({ id, eventId: request.guest.eventId, guestId: request.guest.id });
     if (!media) throw notFound('素材不存在');
 
     await softDeleteMedia(media);
     return { ok: true, data: { id } };
   });
 
-  /**
-   * 举报。审核要求有入口，所以必须有。
-   * 重复举报同一条只记一次，避免刷量把管理员淹没。
-   */
-  app.post('/api/media/:id/report', { preHandler: app.requireGuest }, async (request) => {
-    const { id } = request.params;
-    const body = request.body ?? {};
-    const reason = typeof body.reason === 'string' ? body.reason.trim() : '';
-
-    if (!isValidReason(reason)) {
-      throw badRequest('举报原因不合法', { allowed: REASON_OPTIONS });
-    }
-
-    // 举报对象必须是调用者能看到的素材
-    const media = mediaRepo.findOwnedAnyEvent({ id, guestId: request.guest.id });
-    if (!media) throw notFound('素材不存在');
-
-    if (reportsRepo.existsFromReporter(media.id, request.guest.id)) {
-      // 幂等返回，不报错——重复举报不是错误行为
-      return { ok: true, data: { alreadyReported: true } };
-    }
-
-    reportsRepo.create({
-      mediaId: media.id,
-      reporterGuestId: request.guest.id,
-      reason,
-      detail: typeof body.detail === 'string' ? body.detail.slice(0, 500) : null,
-    });
-
-    return { ok: true, data: { reported: true } };
-  });
 }

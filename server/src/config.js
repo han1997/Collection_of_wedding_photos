@@ -2,7 +2,7 @@
  * 配置：从环境变量读取、校验、定型。
  *
  * 设计原则：**缺关键配置就在启动时炸掉，并一次列全部问题**。
- * 最糟的情况是服务起来了、婚礼当天第一位宾客上传时才发现 AppSecret 没配。
+ * 关键配置必须在接收第一份文件前校验。
  */
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -98,10 +98,6 @@ if (!isTest) {
   }
 }
 
-// --- 微信 ---------------------------------------------------------------
-const wxAppId = str('WX_APPID', '');
-const wxSecret = str('WX_SECRET', '');
-
 // --- 上传限制 -----------------------------------------------------------
 const maxUploadMb = num('MAX_UPLOAD_MB', 4096);
 const chunkSizeMb = num('CHUNK_SIZE_MB', 4);
@@ -114,7 +110,7 @@ if (chunkSizeMb < 1 || chunkSizeMb > 16) {
 if (nodeEnv === 'production' && !isTest) {
   if (!publicBaseUrl.startsWith('https://')) {
     problems.push(
-      `PUBLIC_BASE_URL 在生产环境必须是 https://（小程序强制要求 HTTPS）。当前是 ${publicBaseUrl}`,
+      `PUBLIC_BASE_URL 在生产环境必须是 https://（浏览器凭证需要 HTTPS 保护）。当前是 ${publicBaseUrl}`,
     );
   }
 }
@@ -140,16 +136,7 @@ const config = {
     password: str('ADMIN_PASSWORD'),
   },
 
-  wechat: {
-    appId: wxAppId,
-    secret: wxSecret,
-    /** 是否具备调微信接口的条件；没有就走本地二维码兜底 */
-    get configured() {
-      return Boolean(wxAppId && wxSecret);
-    },
-    envVersion: enumOf('WX_ENV_VERSION', ['release', 'trial', 'develop'], 'trial'),
-    qrPage: str('WX_QR_PAGE', 'pages/event/index'),
-  },
+  eventId: str('EVENT_ID', ''),
 
   upload: {
     maxUploadBytes: Math.round(maxUploadMb * 1024 * 1024),
@@ -168,10 +155,6 @@ const config = {
     /** 允许 resolve 的 ffmpeg / ffprobe 路径，找不到就优雅降级 */
     ffmpegPath: str('FFMPEG_PATH', 'ffmpeg'),
     ffprobePath: str('FFPROBE_PATH', 'ffprobe'),
-  },
-
-  contentCheck: {
-    enabled: bool('CONTENT_CHECK_ENABLED', true),
   },
 
   /** 数据根目录下的固定子路径 */

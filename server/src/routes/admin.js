@@ -1,3 +1,5 @@
+import { currentEvent } from '../repositories/site.repo.js';
+import * as guestsRepo from '../repositories/guests.repo.js';
 /**
  * 管理端接口。主持人用：建活动、看全部素材、删除、导出。
  *
@@ -68,7 +70,7 @@ export default async function adminRoutes(app) {
   // -------------------------------------------------------------------------
   app.post(
     '/api/admin/login',
-    { config: { rateLimit: { max: 5, timeWindow: '15 minutes' } } },
+    { config: { rateLimit: { max: 5, timeWindow: '15 minutes', keyGenerator: request => request.ip } } },
     async (request) => {
       const body = request.body ?? {};
       const username = typeof body.username === 'string' ? body.username.trim() : '';
@@ -149,46 +151,15 @@ export default async function adminRoutes(app) {
   // -------------------------------------------------------------------------
   // 活动
   // -------------------------------------------------------------------------
-  app.get('/api/admin/events', { preHandler: app.requireAdminReady }, async () => ({
-    ok: true,
-    data: { events: eventsRepo.listWithStats().map(adminViewOfEvent) },
-  }));
-
-  app.post('/api/admin/events', { preHandler: app.requireAdminReady }, async (request) => {
-    const body = request.body ?? {};
-    const title = typeof body.title === 'string' ? body.title.trim() : '';
-    if (!title) throw badRequest('请填写活动名称');
-    if (title.length > 60) throw badRequest('活动名称过长');
-
-    if (body.eventDate && !/^\d{4}-\d{2}-\d{2}$/.test(String(body.eventDate))) {
-      throw badRequest('日期格式应为 YYYY-MM-DD');
-    }
-
-    const event = eventsRepo.create({
-      title,
-      coupleNames: str(body.coupleNames, 60),
-      eventDate: str(body.eventDate, 10),
-      venue: str(body.venue, 80),
-      welcomeText: str(body.welcomeText, 200),
-      createdBy: request.admin.id,
-    });
-
-    // 建目录并写一份 .event.json，让文件管理器里能认出这场婚礼
-    await storage.ensureEventDirs(event.slug);
-    await storage.writeEventManifest(event);
-
-    return { ok: true, data: { event: adminViewOfEvent(event) } };
-  });
-
-  app.get('/api/admin/events/:id', { preHandler: app.requireAdminReady }, async (request) => {
-    const event = eventsRepo.findById(request.params.id);
+  app.get('/api/admin/wedding', { preHandler: app.requireAdminReady }, async (request) => {
+    const event = currentEvent();
     if (!event) throw notFound('活动不存在');
 
     return {
       ok: true,
       data: {
         event: adminViewOfEvent(event),
-        guests: eventGuestsRepo.listByEvent(event.id),
+        guests: eventGuestsRepo.listByEvent(event.id).map(g => ({ ...g, ...guestsRepo.findById(g.guestId) })),
         stats: {
           uploadCount: mediaRepo.countByEvent(event.id),
           totalBytes: eventsRepo.totalBytes(event.id),
@@ -198,8 +169,8 @@ export default async function adminRoutes(app) {
     };
   });
 
-  app.patch('/api/admin/events/:id', { preHandler: app.requireAdminReady }, async (request) => {
-    const event = eventsRepo.findById(request.params.id);
+  app.patch('/api/admin/wedding', { preHandler: app.requireAdminReady }, async (request) => {
+    const event = currentEvent();
     if (!event) throw notFound('活动不存在');
 
     const body = request.body ?? {};
@@ -219,7 +190,10 @@ export default async function adminRoutes(app) {
     }
     if (body.venue !== undefined) patch.venue = str(body.venue, 80);
     if (body.welcomeText !== undefined) patch.welcomeText = str(body.welcomeText, 200);
-    if (body.uploadEnabled !== undefined) patch.uploadEnabled = Boolean(body.uploadEnabled);
+    if (body.uploadEnabled !== undefined) {
+      if (typeof body.uploadEnabled !== 'boolean') throw badRequest('上传开关必须是布尔值');
+      patch.uploadEnabled = body.uploadEnabled;
+    }
     if (body.status !== undefined) {
       if (!['active', 'closed', 'archived'].includes(body.status)) {
         throw badRequest('状态不合法');
@@ -228,18 +202,18 @@ export default async function adminRoutes(app) {
     }
 
     const updated = eventsRepo.update(event.id, patch);
+    await storage.ensureEventDirs(updated.slug);
     await storage.writeEventManifest(updated);
 
     return { ok: true, data: { event: adminViewOfEvent(updated) } };
   });
 
-  /** 软删除。文件和媒体记录都保留，随时可以恢复。 */
-  app.delete('/api/admin/events/:id', { preHandler: app.requireAdminReady }, async (request) => {
-    const event = eventsRepo.findById(request.params.id);
-    if (!event) throw notFound('活动不存在');
-
-    eventsRepo.softDelete(event.id);
-    return { ok: true, data: { deleted: true } };
+  app.patch('/api/admin/guests/:id', { preHandler: app.requireAdminReady }, async (request) => {
+    const id = Number(request.params.id);
+    if (!eventGuestsRepo.find(currentEvent().id, id)) throw notFound('宾客不存在');
+    if (typeof request.body?.banned !== 'boolean') throw badRequest('banned 必须是布尔值');
+    guestsRepo.setBanned(id, request.body.banned);
+    return { ok: true, data: {} };
   });
 
   // -------------------------------------------------------------------------
@@ -247,11 +221,13 @@ export default async function adminRoutes(app) {
   // -------------------------------------------------------------------------
   app.get('/api/admin/media', { preHandler: app.requireAdminReady }, async (request) => {
     const q = request.query ?? {};
-    const limit = Math.min(Number(q.limit) || 50, 200);
+    const limit = Number(q.limit ?? 50);
+    if (!Number.isInteger(limit) || limit < 1 || limit > 200) throw badRequest('分页数量不合法');
+    if (q.guestId && (!Number.isSafeInteger(Number(q.guestId)) || Number(q.guestId) < 1)) throw badRequest('宾客筛选不合法');
 
     const rows = mediaRepo.listAllAdmin({
-      eventId: q.eventId ? String(q.eventId) : undefined,
-      guestId: q.guestId !== undefined ? Number(q.guestId) : undefined,
+      eventId: currentEvent().id,
+      guestId: q.guestId ? Number(q.guestId) : undefined,
       kind: q.kind ? String(q.kind) : undefined,
       status: q.status ? String(q.status) : undefined,
       cursor: q.cursor ? String(q.cursor) : undefined,
@@ -270,7 +246,7 @@ export default async function adminRoutes(app) {
 
   app.get('/api/admin/media/:id', { preHandler: app.requireAdminReady }, async (request) => {
     const media = mediaRepo.findById(request.params.id);
-    if (!media) throw notFound('素材不存在');
+    if (!media || media.eventId !== currentEvent().id) throw notFound('素材不存在');
     return {
       ok: true,
       data: { media: { ...toClient(media, 'a'), guestId: media.guestId, eventId: media.eventId } },
@@ -279,55 +255,12 @@ export default async function adminRoutes(app) {
 
   app.delete('/api/admin/media/:id', { preHandler: app.requireAdminReady }, async (request) => {
     const media = mediaRepo.findById(request.params.id);
-    if (!media) throw notFound('素材不存在');
+    if (!media || media.eventId !== currentEvent().id) throw notFound('素材不存在');
 
     await softDeleteMedia(media);
     return { ok: true, data: { deleted: true } };
   });
 
-  // -------------------------------------------------------------------------
-  // 举报
-  // -------------------------------------------------------------------------
-  app.get('/api/admin/reports', { preHandler: app.requireAdminReady }, async () => ({
-    ok: true,
-    data: { reports: reportsRepo.listOpen(), openCount: reportsRepo.countOpen() },
-  }));
-
-  app.post('/api/admin/reports/:id', { preHandler: app.requireAdminReady }, async (request) => {
-    const id = Number(request.params.id);
-    const status = request.body?.status;
-    if (!['handled', 'dismissed'].includes(status)) throw badRequest('状态不合法');
-    reportsRepo.setStatus(id, status);
-    return { ok: true, data: { updated: true } };
-  });
-
-  // -------------------------------------------------------------------------
-  // 概况
-  // -------------------------------------------------------------------------
-  app.get('/api/admin/stats', { preHandler: app.requireAdminReady }, async () => {
-    const events = eventsRepo.listWithStats();
-    const [diskFree, eventsSize] = await Promise.all([
-      storage.freeBytes(),
-      // 遍历整个 events/ 目录。素材量大时会慢，所以放在 stats 里而不是任何热路径上。
-      storage.dirSize(config.paths.events),
-    ]);
-
-    return {
-      ok: true,
-      data: {
-        eventCount: events.length,
-        activeEventCount: events.filter((e) => e.status === 'active').length,
-        totalUploads: events.reduce((s, e) => s + (e.uploadCount ?? 0), 0),
-        totalBytes: events.reduce((s, e) => s + (e.totalBytes ?? 0), 0),
-        eventsDirBytes: eventsSize,
-        openReports: reportsRepo.countOpen(),
-        queue: queueStats(),
-        diskFreeBytes: diskFree,
-        todayShanghai: shanghaiDay(),
-        serverTime: isoAfter(0),
-      },
-    };
-  });
 }
 
 /** 截断字符串字段，空值归一成 null */

@@ -55,6 +55,7 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY package.json ./
 COPY --chown=node:node server/ ./server/
+COPY --chown=node:node web/ ./web/
 
 # 数据目录先建好并交给 node 用户。
 # 实际内容由 bind mount 覆盖，但挂载点本身需要存在且可写。
@@ -66,7 +67,7 @@ USER node
 EXPOSE 3000
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=25s --retries=3 \
-  CMD node -e "fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+  CMD node server/scripts/healthcheck.js
 
 # tini 当 PID 1：否则 ffmpeg/ffprobe 这类子进程会变僵尸，
 # 而且 SIGTERM 的转发也是错的（停止容器时正在合并的大文件会留成半截）

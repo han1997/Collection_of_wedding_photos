@@ -16,8 +16,6 @@ import {
   createEvent,
   getApp,
   guestLogin,
-  installFakeWechat,
-  restoreFetch,
   stopApp,
   uploadFile,
 } from './_app.js';
@@ -27,13 +25,11 @@ let app;
 let admin;
 
 before(async () => {
-  installFakeWechat();
   app = await getApp();
   admin = (await bootstrapAdmin(app)).token;
 });
 
 after(async () => {
-  restoreFetch();
   await stopApp();
 });
 
@@ -185,7 +181,7 @@ test('★ 处理失败不会让素材消失（fail-open）', async () => {
   // 而且宾客的列表里仍然看得到它
   const list = await app.inject({
     method: 'GET',
-    url: `/api/events/${event.id}/media`,
+    url: '/api/media',
     headers: { authorization: `Bearer ${token}` },
   });
   const item = list.json().data.media.find((m) => m.id === mediaId);

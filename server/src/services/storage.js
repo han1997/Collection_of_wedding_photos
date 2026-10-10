@@ -404,3 +404,15 @@ export async function freeBytes() {
     return null;
   }
 }
+
+// 目录标识来自服务端随机数，称呼不参与路径构造。
+export function guestDayDir(folderId, day, bucket) {
+  if (!/^[A-Za-z0-9_-]{20,64}$/.test(folderId) || !/^\d{4}-\d{2}-\d{2}$/.test(day) || !['originals', 'thumbs', 'previews', 'posters'].includes(bucket)) throw new Error('宾客目录参数无效');
+  return toAbs(`guests/${folderId}/${day}/${bucket}`);
+}
+export async function writeGuestManifest(folderId, displayName) {
+  guestDayDir(folderId, '2000-01-01', 'originals');
+  const root = toAbs(`guests/${folderId}`);
+  await fsp.mkdir(root, { recursive: true });
+  await fsp.writeFile(toAbs(`guests/${folderId}/guest.json`), JSON.stringify({ 称呼: displayName || '未填写', 目录标识: folderId }, null, 2));
+}

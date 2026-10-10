@@ -64,7 +64,7 @@ function toPublic(row) {
  */
 export function encodeCursor(row) {
   if (!row) return '';
-  return Buffer.from(`${row.created_at}|${row.id}`, 'utf8').toString('base64url');
+  return Buffer.from(`${row.created_at ?? row.createdAt}|${row.id}`, 'utf8').toString('base64url');
 }
 
 /**

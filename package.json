@@ -3,18 +3,22 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "婚礼照片收集系统：微信小程序 + 自建 NAS 后端",
+  "description": "婚礼照片收集 Web 应用：单场婚礼、浏览器匿名会话、自建 NAS",
   "workspaces": [
     "server"
   ],
   "engines": {
-    "node": ">=22.5.0"
+    "node": ">=24.0.0"
   },
   "scripts": {
     "dev": "npm --workspace server run dev",
     "start": "npm --workspace server run start",
     "test": "npm --workspace server run test",
     "migrate": "npm --workspace server run migrate",
-    "seed-admin": "npm --workspace server run seed-admin"
+    "seed-admin": "npm --workspace server run seed-admin",
+    "test:web": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0"
   }
 }

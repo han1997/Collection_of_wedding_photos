@@ -1,3 +1,6 @@
+import { createHash } from 'node:crypto';
+import { findById as findGuest } from '../repositories/guests.repo.js';
+import { guestDayDir } from './storage.js';
 /**
  * ★ 分片上传：初始化、收片、合并。
  *
@@ -69,6 +72,7 @@ export async function initUpload({ event, guest, body, sourceIp }) {
   const fileName = typeof body?.fileName === 'string' ? body.fileName : '';
   const declaredBytes = Number(body?.bytes);
 
+  if (body?.sha256 !== undefined && !/^[a-f0-9]{64}$/i.test(body.sha256)) throw badRequest('文件摘要无效');
   const declared = normalizeDeclared(fileName, body?.mime);
   if (!declared) {
     throw unsupportedMedia('不支持的文件类型', {
@@ -86,7 +90,7 @@ export async function initUpload({ event, guest, body, sourceIp }) {
     );
   }
 
-  if (!event.uploadEnabled) {
+  if ((!event.uploadEnabled || event.status !== 'active')) {
     throw conflict('本场活动的上传通道已关闭');
   }
 
@@ -170,7 +174,7 @@ async function assertQuota(event, guest, incomingBytes) {
  * @param {import('node:stream').Readable} p.stream 请求体裸流
  * @param {string|undefined} p.contentLength
  */
-export async function receivePart({ session, partNo, stream, contentLength }) {
+async function receivePartUnlocked({ session, partNo, stream, contentLength }) {
   if (session.status !== 'open') {
     throw conflict(`该上传会话状态为 ${session.status}，不能再接收分片`);
   }
@@ -191,7 +195,7 @@ export async function receivePart({ session, partNo, stream, contentLength }) {
     }
   }
 
-  const dir = session.tmpDir;
+  const dir = uploadTmpDir(session.id);
   const finalPath = partPath(session.id, partNo);
   const partialPath = `${finalPath}.partial`;
 
@@ -271,7 +275,7 @@ export function missingParts(session) {
  * @param {any} p.event
  * @param {string|undefined} p.sourceIp
  */
-export async function completeUpload({ session, event, sourceIp }) {
+async function completeUploadUnlocked({ session, event, sourceIp }) {
   if (session.status === 'completed') {
     // 幂等：客户端没收到响应会重试 complete，这里直接回已有的结果
     return { mediaId: session.mediaId, alreadyCompleted: true };
@@ -295,6 +299,9 @@ export async function completeUpload({ session, event, sourceIp }) {
     );
   }
 
+  if (Date.parse(session.expiresAt) <= Date.now()) throw conflict('上传会话已过期');
+  if (!event.uploadEnabled || event.status !== 'active') throw conflict('上传通道已关闭');
+  await assertQuota(event, { id: session.guestId }, session.declaredBytes);
   uploadSessionsRepo.setStatus(session.id, 'assembling');
 
   const assembled = assemblingPath(session.id, session.ext);
@@ -304,6 +311,16 @@ export async function completeUpload({ session, event, sourceIp }) {
   } catch (err) {
     uploadSessionsRepo.setStatus(session.id, 'failed');
     throw err;
+  }
+
+  if (session.declaredSha256) {
+    const hash = createHash('sha256');
+    for await (const chunk of fs.createReadStream(assembled)) hash.update(chunk);
+    if (hash.digest('hex') !== session.declaredSha256) {
+      uploadSessionsRepo.setStatus(session.id, 'failed');
+      await cleanupTmp(session.id);
+      throw conflict('文件摘要不一致，请重新选择原文件上传');
+    }
   }
 
   // --- 内容校验（此时才拿到完整文件）------------------------------------
@@ -335,10 +352,11 @@ export async function completeUpload({ session, event, sourceIp }) {
   // --- 落盘 --------------------------------------------------------------
   const at = new Date();
   const day = shanghaiDay(at);
-  await ensureEventDayDirs(event.slug, day);
+  const owner = findGuest(session.guestId);
+  const dir = guestDayDir(owner.folderId, day, 'originals');
+  await fsp.mkdir(dir, { recursive: true });
 
   const membership = eventGuestsRepo.find(event.id, session.guestId);
-  const dir = eventDayDir(event.slug, day, 'originals');
   const filename = await uniqueFilename(
     dir,
     buildFilename({
@@ -442,17 +460,42 @@ export async function cleanupTmp(sessionId) {
  * 放弃上传：清掉临时文件，删掉会话。
  * 已经 completed 的会话不能这样放弃。
  */
-export async function abortUpload(session) {
-  await cleanupTmp(session.id);
+async function abortUploadUnlocked(session) {
   if (session.status === 'completed') {
     throw conflict('该上传已完成，无法放弃');
   }
+  await cleanupTmp(session.id);
   uploadSessionsRepo.remove(session.id);
 }
 
 /** 供路由层复用的查询：按 (id, guestId) 取会话，取不到就是 404 */
-export function getOwnedSession(id, guestId) {
-  const session = uploadSessionsRepo.findOwned({ id, guestId });
+export function getOwnedSession(id, guestId, eventId) {
+  const session = uploadSessionsRepo.findOwned({ id, guestId, eventId });
   if (!session) throw notFound('上传会话不存在');
   return session;
+}
+
+// 同一会话串行写盘，避免重试/双标签页同时覆盖 partial 或重复合并。
+const locks = new Map();
+async function locked(key, action) {
+  const previous = locks.get(key) || Promise.resolve();
+  const task = previous.catch(() => {}).then(action);
+  locks.set(key, task);
+  try { return await task; }
+  finally { if (locks.get(key) === task) locks.delete(key); }
+}
+function fresh(session) {
+  const result = uploadSessionsRepo.findById(session.id);
+  if (!result) throw notFound('上传会话不存在');
+  return result;
+}
+export function receivePart(options) {
+  return locked(options.session.id, () => receivePartUnlocked({ ...options, session: fresh(options.session) }));
+}
+export function completeUpload(options) {
+  // 跨会话也串行完成，保证配额复核与落库不会被并发完成绕过。
+  return locked('complete', () => locked(options.session.id, () => completeUploadUnlocked({ ...options, session: fresh(options.session) })));
+}
+export function abortUpload(session) {
+  return locked(session.id, () => abortUploadUnlocked(fresh(session)));
 }

@@ -1,3 +1,5 @@
+import { currentEvent } from '../repositories/site.repo.js';
+import { findById as findGuest } from '../repositories/guests.repo.js';
 /**
  * ★ 全服务唯一一个文件出口。
  *
@@ -70,7 +72,8 @@ export default async function fileRoutes(app) {
     }
 
     const media = mediaRepo.findById(payload.m);
-    if (!media) throw notFound('素材不存在');
+    if (!media || media.eventId !== currentEvent().id) throw notFound('素材不存在');
+    if (payload.g !== 'a' && findGuest(payload.g)?.banned) throw notFound('素材不存在');
 
     // 纵深防御：令牌里记录了签发时的持有者，这里再核对一次素材归属。
     // 令牌本身就是凭据，所以这不防「URL 被转发」——那件事靠过期时间限制；
@@ -101,7 +104,7 @@ export default async function fileRoutes(app) {
 
     // Content-Type 一律取自**入库时经白名单校验的 mime**，绝不用请求头或扩展名推断。
     // 这挡住了「上传一个 .jpg 实际是 HTML」这类内容嗅探攻击。
-    reply.header('Content-Type', media.mime);
+    reply.header('Content-Type', ['thumb', 'preview', 'poster'].includes(payload.v) ? 'image/jpeg' : media.mime);
     reply.header('Accept-Ranges', 'bytes');
     // 签名 URL 是每人专用的，可以放心让浏览器缓存一会儿
     reply.header('Cache-Control', 'private, max-age=1800');

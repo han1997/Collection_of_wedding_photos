@@ -14,25 +14,9 @@ import config from '../config.js';
 const ISSUER = 'wedding-collect';
 const AUDIENCE = 'wedding-collect';
 
-const GUEST_TTL = '7d';
 const ADMIN_TTL = '12h';
 
 const secretKey = new TextEncoder().encode(config.secrets.jwt);
-
-/**
- * @param {number} guestId
- * @param {string} openid
- */
-export async function signGuestToken(guestId, openid) {
-  return new SignJWT({ typ: 'guest', oid: openid })
-    .setProtectedHeader({ alg: 'HS256' })
-    .setSubject(String(guestId))
-    .setIssuer(ISSUER)
-    .setAudience(AUDIENCE)
-    .setIssuedAt()
-    .setExpirationTime(GUEST_TTL)
-    .sign(secretKey);
-}
 
 /**
  * @param {number} adminId
@@ -62,7 +46,7 @@ export async function verifyToken(token) {
   });
 
   const typ = payload.typ;
-  if (typ !== 'guest' && typ !== 'admin') {
+  if (typ !== 'admin') {
     throw new Error('令牌类型不认识');
   }
 

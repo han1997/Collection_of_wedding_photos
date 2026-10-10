@@ -1,3 +1,4 @@
+import { initializeSite } from './repositories/site.repo.js';
 /**
  * Fastify 应用装配。
  *
@@ -32,9 +33,10 @@ import publicRoutes from './routes/public.js';
  * @param {{logger?: boolean|object}} [opts]
  */
 export async function buildApp(opts = {}) {
+  initializeSite();
   const app = Fastify({
-    // 反代后面才拿得到真实 IP。⚠️ 若容器直接暴露公网，这会让直连者
-    // 伪造 X-Forwarded-For —— 所以 compose 里只绑 127.0.0.1。
+    // 反代后面才拿得到真实 IP。⚠️ TRUST_PROXY 默认 false：容器直接暴露
+    // 0.0.0.0 时，信任代理头会让直连者伪造 X-Forwarded-For。
     trustProxy: config.trustProxy,
 
     // 请求体上限保持默认的 1MB 不动。
@@ -43,7 +45,7 @@ export async function buildApp(opts = {}) {
 
     // 路由参数长度上限。Fastify 默认 100，而 /f/:token 里的签名令牌
     // 光是 payload 加上 HMAC 就超过 100 字符，会被直接判成 414。
-    maxParamLength: 512,
+    routerOptions: { maxParamLength: 512 },
 
     logger:
       opts.logger === false
@@ -68,6 +70,10 @@ export async function buildApp(opts = {}) {
           },
   });
 
+  app.addHook('onSend', async (request, reply, payload) => {
+    if (request.url.startsWith('/api/')) reply.header('Cache-Control', 'no-store');
+    return payload;
+  });
   app.setErrorHandler(errorHandler);
 
   // 未匹配的路由也走统一信封，别把 Fastify 的默认格式漏出去

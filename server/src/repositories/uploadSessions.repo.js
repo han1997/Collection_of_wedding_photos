@@ -75,9 +75,9 @@ export function findById(id) {
 }
 
 /** ★ 按 (id, guest_id) 查找——所有权是查询条件的一部分 */
-export function findOwned({ id, guestId }) {
+export function findOwned({ id, guestId, eventId }) {
   return toPublic(
-    get(`SELECT ${FIELDS} FROM upload_sessions WHERE id = ? AND guest_id = ?`, [id, guestId]),
+    get(`SELECT ${FIELDS} FROM upload_sessions WHERE id = ? AND guest_id = ? AND event_id = ?`, [id, guestId, eventId]),
   );
 }
 
